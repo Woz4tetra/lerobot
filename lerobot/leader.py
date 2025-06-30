@@ -17,15 +17,12 @@ Simple script to control a robot from teleoperation.
 
 Example:
 
+
 ```shell
-python -m lerobot.teleoperate \
-    --robot.type=so101_follower \
-    --robot.port=/dev/tty.usbmodem58760431541 \
-    --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 1920, height: 1080, fps: 30}}" \
-    --robot.id=black \
+python -m lerobot.leader \
     --teleop.type=so101_leader \
-    --teleop.port=/dev/tty.usbmodem58760431551 \
-    --teleop.id=blue \
+    --teleop.port=/dev/ttyACM0 \
+    --teleop.id=plusle \
     --display_data=true
 ```
 """
@@ -64,7 +61,6 @@ from .common.teleoperators import gamepad, koch_leader, so100_leader, so101_lead
 @dataclass
 class TeleoperateConfig:
     teleop: TeleoperatorConfig
-    robot: RobotConfig
     # Limit the maximum frames per second.
     fps: int = 60
     teleop_time_s: float | None = None
@@ -72,35 +68,23 @@ class TeleoperateConfig:
     display_data: bool = False
 
 
-def teleop_loop(
-    teleop: Teleoperator, robot: Robot, fps: int, display_data: bool = False, duration: float | None = None
-):
-    display_len = max(len(key) for key in robot.action_features)
+def teleop_loop(teleop: Teleoperator, fps: int, display_data: bool = False, duration: float | None = None):
     start = time.perf_counter()
     while True:
         loop_start = time.perf_counter()
         action = teleop.get_action()
         if display_data:
-            observation = robot.get_observation()
-            for obs, val in observation.items():
-                if isinstance(val, float):
-                    rr.log(f"observation_{obs}", rr.Scalar(val))
-                elif isinstance(val, np.ndarray):
-                    rr.log(f"observation_{obs}", rr.Image(val), static=True)
             for act, val in action.items():
                 if isinstance(val, float):
                     rr.log(f"action_{act}", rr.Scalar(val))
 
-        robot.send_action(action)
         dt_s = time.perf_counter() - loop_start
         busy_wait(1 / fps - dt_s)
 
         loop_s = time.perf_counter() - loop_start
 
-        print("\n" + "-" * (display_len + 10))
-        print(f"{'NAME':<{display_len}} | {'NORM':>7}")
         for motor, value in action.items():
-            print(f"{motor:<{display_len}} | {value:>7.2f}")
+            print(f"{motor} | {value:>7.2f}")
         print(f"\ntime: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
 
         if duration is not None and time.perf_counter() - start >= duration:
@@ -117,24 +101,16 @@ def teleoperate(cfg: TeleoperateConfig):
         _init_rerun(session_name="teleoperation")
 
     teleop = make_teleoperator_from_config(cfg.teleop)
-    robot = make_robot_from_config(cfg.robot)
-
     teleop.connect()
-    robot.connect()
-    should_run = True
 
-    while should_run:
-        try:
-            teleop_loop(teleop, robot, cfg.fps, display_data=cfg.display_data, duration=cfg.teleop_time_s)
-        except ConnectionError as e:
-            logging.error(f"Connection error: {e}")
-        except KeyboardInterrupt:
-            should_run = False
-        finally:
-            if cfg.display_data:
-                rr.rerun_shutdown()
-            teleop.disconnect()
-            robot.disconnect()
+    try:
+        teleop_loop(teleop, cfg.fps, display_data=cfg.display_data, duration=cfg.teleop_time_s)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if cfg.display_data:
+            rr.rerun_shutdown()
+        teleop.disconnect()
 
 
 if __name__ == "__main__":
