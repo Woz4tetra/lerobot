@@ -18,14 +18,14 @@ Simple script to control a robot from teleoperation.
 Example:
 
 ```shell
-python -m lerobot.teleoperate \
+python -m lerobot.record \
     --robot.type=so101_follower \
-    --robot.port=/dev/tty.usbmodem58760431541 \
-    --robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 1920, height: 1080, fps: 30}}" \
-    --robot.id=black \
+    --robot.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A017687-if00 \
+    --robot.cameras="{ front: {type: zed, id: 2759, width: 1920, height: 1080, fps: 15}}" \
+    --robot.id=plusle \
     --teleop.type=so101_leader \
-    --teleop.port=/dev/tty.usbmodem58760431551 \
-    --teleop.id=blue \
+    --teleop.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A018247-if00 \
+    --teleop.id=minun \
     --display_data=true
 ```
 """
