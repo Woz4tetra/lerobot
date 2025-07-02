@@ -76,6 +76,7 @@ def write_image(image: np.ndarray | PIL.Image.Image, fpath: Path):
             img = image
         else:
             raise TypeError(f"Unsupported image type: {type(image)}")
+        print("Writing image to", fpath)
         img.save(fpath)
     except Exception as e:
         print(f"Error writing image {fpath}: {e}")
@@ -153,7 +154,9 @@ class AsyncImageWriter:
         self.queue.put((image, fpath))
 
     def wait_until_done(self):
+        print("Waiting for all images to be saved...")
         self.queue.join()
+        print("All images have been saved.")
 
     def stop(self):
         if self._stopped:

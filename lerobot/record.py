@@ -22,11 +22,13 @@ python -m lerobot.record \
     --robot.type=so101_follower \
     --robot.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A017687-if00 \
     --robot.id=plusle \
+    --robot.cameras="{camera_a: {type: zed, camera_serial: 2759, width: 1280, height: 720, fps: 30}, camera_b: {type: zed, camera_serial: 33452020, width: 1280, height: 720, fps: 30}}" \
     --teleop.type=so101_leader \
     --teleop.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A018247-if00 \
     --teleop.id=minun \
-    --display_data=true
-    
+    --dataset.repo_id=woz4tetra/record-test-$(date '+%Y-%m-%dT%H-%M-%S') \
+    --dataset.num_episodes=2 \
+    --dataset.single_task="Grab the cube"
     
 python -m lerobot.record \
     --robot.type=so100_follower \
@@ -59,6 +61,7 @@ from lerobot.common.cameras import (  # noqa: F401
 )
 from lerobot.common.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
 from lerobot.common.cameras.realsense.configuration_realsense import RealSenseCameraConfig  # noqa: F401
+from lerobot.common.cameras.zed.configuration_zed import ZedCameraConfig  # noqa: F401
 from lerobot.common.datasets.image_writer import safe_stop_image_writer
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 from lerobot.common.datasets.utils import build_dataset_frame, hw_to_dataset_features
@@ -111,13 +114,13 @@ class DatasetRecordConfig:
     # Number of seconds for data recording for each episode.
     episode_time_s: int | float = 60
     # Number of seconds for resetting the environment after each episode.
-    reset_time_s: int | float = 60
+    reset_time_s: int | float = 5
     # Number of episodes to record.
     num_episodes: int = 50
     # Encode frames in the dataset into video
     video: bool = True
     # Upload dataset to Hugging Face hub.
-    push_to_hub: bool = True
+    push_to_hub: bool = False
     # Upload on private repository on the Hugging Face hub.
     private: bool = False
     # Add tags to your dataset on the hub.
@@ -242,6 +245,7 @@ def record_loop(
                     rr.log(f"action.{act}", rr.Scalar(val))
 
         dt_s = time.perf_counter() - start_loop_t
+        # print("loop time: {:.2f}ms ({:.0f} Hz)".format(dt_s * 1000, 1 / dt_s))
         busy_wait(1 / fps - dt_s)
 
         timestamp = time.perf_counter() - start_episode_t

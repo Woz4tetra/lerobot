@@ -18,15 +18,25 @@ Simple script to control a robot from teleoperation.
 Example:
 
 ```shell
-python -m lerobot.record \
+python -m lerobot.teleoperate \
     --robot.type=so101_follower \
     --robot.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A017687-if00 \
-    --robot.cameras="{ front: {type: zed, id: 2759, width: 1920, height: 1080, fps: 15}}" \
     --robot.id=plusle \
     --teleop.type=so101_leader \
     --teleop.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A018247-if00 \
     --teleop.id=minun \
     --display_data=true
+
+python -m lerobot.teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A017687-if00 \
+    --robot.id=plusle \
+    --robot.cameras="{camera_a: {type: zed, camera_serial: 2759, width: 1280, height: 720, fps: 30}, camera_b: {type: zed, camera_serial: 33452020, width: 1280, height: 720, fps: 30}}" \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A018247-if00 \
+    --teleop.id=minun \
+    --display_data=true
+
 ```
 """
 
@@ -41,6 +51,7 @@ import rerun as rr
 
 from lerobot.common.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
 from lerobot.common.cameras.realsense.configuration_realsense import RealSenseCameraConfig  # noqa: F401
+from lerobot.common.cameras.zed.configuration_zed import ZedCameraConfig  # noqa: F401
 from lerobot.common.robots import (  # noqa: F401
     Robot,
     RobotConfig,
@@ -82,14 +93,14 @@ def teleop_loop(
         action = teleop.get_action()
         if display_data:
             observation = robot.get_observation()
-            for obs, val in observation.items():
-                if isinstance(val, float):
-                    rr.log(f"observation_{obs}", rr.Scalar(val))
-                elif isinstance(val, np.ndarray):
-                    rr.log(f"observation_{obs}", rr.Image(val), static=True)
-            for act, val in action.items():
-                if isinstance(val, float):
-                    rr.log(f"action_{act}", rr.Scalar(val))
+            # for obs, val in observation.items():
+            #     if isinstance(val, float):
+            #         rr.log(f"observation_{obs}", rr.Scalar(val))
+            #     elif isinstance(val, np.ndarray):
+            #         rr.log(f"observation_{obs}", rr.Image(val), static=True)
+            # for act, val in action.items():
+            #     if isinstance(val, float):
+            #         rr.log(f"action_{act}", rr.Scalar(val))
 
         robot.send_action(action)
         dt_s = time.perf_counter() - loop_start
@@ -104,6 +115,7 @@ def teleop_loop(
         print(f"\ntime: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
 
         if duration is not None and time.perf_counter() - start >= duration:
+            print("Teleoperation duration reached, exiting loop.")
             return
 
         move_cursor_up(len(action) + 5)
@@ -125,16 +137,30 @@ def teleoperate(cfg: TeleoperateConfig):
 
     while should_run:
         try:
+            print(f"Teleoperation started with {cfg.teleop.type} controlling {cfg.robot.type}.")
             teleop_loop(teleop, robot, cfg.fps, display_data=cfg.display_data, duration=cfg.teleop_time_s)
-        except ConnectionError as e:
-            logging.error(f"Connection error: {e}")
         except KeyboardInterrupt:
             should_run = False
+        except BaseException as e:
+            logging.error(f"An error occurred during teleoperation: {e}")
+            logging.exception(e, exc_info=True)
         finally:
-            if cfg.display_data:
-                rr.rerun_shutdown()
-            teleop.disconnect()
-            robot.disconnect()
+            time.sleep(0.5)
+            print("Disconnecting teleoperation and robot...")
+            try:
+                robot.disconnect()
+            except BaseException as e:
+                logging.error(f"Error during robot disconnection: {e}")
+                logging.exception(e, exc_info=True)
+            try:
+                teleop.disconnect()
+            except BaseException as e:
+                logging.error(f"Error during teleop disconnection: {e}")
+                logging.exception(e, exc_info=True)
+            if not should_run:
+                print("Exiting teleoperation loop.")
+    if cfg.display_data:
+        rr.rerun_shutdown()
 
 
 if __name__ == "__main__":

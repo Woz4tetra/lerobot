@@ -17,10 +17,7 @@ Provides the OpenCVCamera class for capturing frames from cameras using OpenCV.
 """
 
 import logging
-import math
-import platform
 import time
-from pathlib import Path
 from threading import Event, Lock, Thread
 from typing import Any, Dict, List
 
@@ -28,7 +25,7 @@ import cv2
 import numpy as np
 import pyzed.sl as sl
 
-from lerobot.common.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
+from lerobot.common.errors import DeviceNotConnectedError
 
 from ..camera import Camera
 from ..configs import ColorMode
@@ -69,7 +66,7 @@ class ZedCamera(Camera):
         self.init_params = sl.InitParameters()
         self.init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
         self.init_params.coordinate_system = sl.COORDINATE_SYSTEM.IMAGE
-        self.init_params.camera_resolution = sl.RESOLUTION.HD1080
+        self.init_params.camera_resolution = sl.RESOLUTION.HD720
         self.init_params.camera_fps = self.fps
         self.init_params.coordinate_units = sl.UNIT.METER
         self.init_params.camera_disable_self_calib = True
@@ -89,9 +86,12 @@ class ZedCamera(Camera):
         return self._is_connected
 
     def connect(self, warmup: bool = True) -> None:
+        logger.info(f"Connecting to ZED camera {self.camera_serial}...")
         open_status = self.camera.open(self.init_params)
         if open_status != sl.ERROR_CODE.SUCCESS:
             raise DeviceNotConnectedError(f"Failed to open ZED camera: {zed_status_to_str(open_status)}")
+        self._is_connected = True
+        logger.info(f"ZED camera {self.camera_serial} connected successfully.")
 
     @staticmethod
     def find_cameras() -> List[Dict[str, Any]]:
@@ -119,13 +119,14 @@ class ZedCamera(Camera):
         self.camera.retrieve_image(self.color_image, sl.VIEW.LEFT)
         color_image_data = self.color_image.get_data()[..., 0:3]
         if color_mode is None or color_mode == ColorMode.RGB:
-            return cv2.cvtColor(color_image_data, cv2.COLOR_BGR2RGB)
+            converted_image = cv2.cvtColor(color_image_data, cv2.COLOR_BGR2RGB)
         elif color_mode == ColorMode.BGR:
-            return color_image_data
+            converted_image = color_image_data
         else:
             raise ValueError(f"Unsupported color mode: {color_mode}")
+        return converted_image
 
-    def async_read(self, timeout_ms: float = 0.1) -> np.ndarray:
+    def async_read(self, timeout_ms: float = 100.0) -> np.ndarray:
         if not self.is_connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
