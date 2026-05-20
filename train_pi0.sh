@@ -34,7 +34,7 @@ docker run --rm --gpus all --shm-size 16gb --user "$(id -u):$(id -g)" \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
     --policy.type=pi0_fast \
-    --policy.pretrained_path=lerobot/pi0_fast_base \
+    --policy.pretrained_path=lerobot/pi0fast-base \
     --policy.device=cuda \
     --policy.dtype=bfloat16 \
     --policy.gradient_checkpointing=true \
