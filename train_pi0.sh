@@ -19,6 +19,7 @@ PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"
 
 HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
+export WANDB_API_KEY="$(cat ~/wandb_key)"
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 
