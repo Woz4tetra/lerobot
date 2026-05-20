@@ -2,9 +2,6 @@ FROM huggingface/lerobot-gpu:latest
 
 USER root
 
-# Missing dep for pi0_fast action tokenizer
-RUN /lerobot/.venv/bin/pip install -q sentencepiece
-
 # Remap the container user to match the host UID/GID so mounted volumes
 # are read/writable without any /tmp workarounds.
 ARG USER_ID=1000
@@ -15,5 +12,8 @@ RUN if [ "$(id -u user_lerobot)" != "${USER_ID}" ] || [ "$(id -g user_lerobot)" 
       usermod -o -u "${USER_ID}" -g "${GROUP_ID}" user_lerobot && \
       chown -R user_lerobot:user_lerobot /lerobot /home/user_lerobot; \
     fi
+
+# Missing dep for pi0_fast action tokenizer
+RUN /lerobot/.venv/bin/pip install -q sentencepiece
 
 USER user_lerobot
