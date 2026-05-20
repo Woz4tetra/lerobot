@@ -235,7 +235,11 @@ class OpenCVCamera(Camera):
         actual_fps = self.videocapture.get(cv2.CAP_PROP_FPS)
         # Use math.isclose for robust float comparison
         if not success or not math.isclose(self.fps, actual_fps, rel_tol=1e-3):
-            raise RuntimeError(f"{self} failed to set fps={self.fps} ({actual_fps=}).")
+            logger.warning(
+                f"{self} could not set fps={self.fps} (hardware reports {actual_fps=}). "
+                f"The read loop will capture at the hardware rate and the caller is responsible "
+                f"for sampling at the desired fps."
+            )
 
     def _validate_fourcc(self) -> None:
         """Validates and sets the camera's FOURCC code."""
