@@ -27,7 +27,8 @@ export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 
-docker compose run --rm --build train \
+docker compose build train
+docker compose run --rm train \
   lerobot-train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
