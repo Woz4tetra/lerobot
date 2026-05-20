@@ -3,10 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.training
-      args:
-        USER_ID: "${USER_ID}"
-        GROUP_ID: "${GROUP_ID}"
     image: lerobot-training:latest
+    user: "${USER_ID}:${GROUP_ID}"
     runtime: nvidia
     shm_size: 16gb
     environment:
