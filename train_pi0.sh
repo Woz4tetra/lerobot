@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Fine-tune a Pi0-Fast policy on a recorded dataset, running inside the official
-# LeRobot GPU Docker image to avoid native dependency issues on the cluster.
+# Fine-tune a Pi0-Fast policy on a recorded dataset.
+# Runs inside a custom Docker image built via docker-compose.
 #
-# Prerequisites on the host:
-#   docker, nvidia-container-toolkit, ~/wandb_key with W&B API key
+# First run: docker compose build train  (takes a few minutes)
+# Subsequent runs: ./train_pi0.sh
 #
 # Usage: ./train_pi0.sh
 
@@ -18,18 +18,16 @@ BATCH_SIZE=4
 PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"
 
-HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
+# ── Environment for docker-compose ────────────────────────────────────────────
+
+export USER_ID="$(id -u)"
+export GROUP_ID="$(id -g)"
+export HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
 export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 
-docker run --rm --gpus all --shm-size 16gb --user "$(id -u):$(id -g)" \
-  -v "${HF_CACHE}:/hf_cache" \
-  -v "${PWD}/outputs:/lerobot/outputs" \
-  -e WANDB_API_KEY="${WANDB_API_KEY}" \
-  -e HF_HOME=/hf_cache \
-  -e HF_LEROBOT_HOME=/hf_cache/lerobot \
-  huggingface/lerobot-gpu:latest \
+docker compose run --rm train \
   lerobot-train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \

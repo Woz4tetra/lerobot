@@ -1,0 +1,19 @@
+services:
+  train:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.training
+      args:
+        USER_ID: "${USER_ID}"
+        GROUP_ID: "${GROUP_ID}"
+    image: lerobot-training:latest
+    runtime: nvidia
+    shm_size: 16gb
+    environment:
+      - WANDB_API_KEY
+      - HF_HOME=/hf_cache
+      - HF_LEROBOT_HOME=/hf_cache/lerobot
+    volumes:
+      - "${HF_CACHE}:/hf_cache"
+      - "./outputs:/lerobot/outputs"
+    working_dir: /lerobot
