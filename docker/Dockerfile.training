@@ -3,6 +3,6 @@ FROM huggingface/lerobot-gpu:latest
 USER root
 
 # Missing dep for pi0_fast action tokenizer
-RUN uv pip install --python /lerobot/.venv sentencepiece
+RUN VIRTUAL_ENV=/lerobot/.venv uv pip install sentencepiece
 
 USER user_lerobot
