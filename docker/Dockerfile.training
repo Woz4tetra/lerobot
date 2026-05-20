@@ -14,6 +14,6 @@ RUN if [ "$(id -u user_lerobot)" != "${USER_ID}" ] || [ "$(id -g user_lerobot)" 
     fi
 
 # Missing dep for pi0_fast action tokenizer
-RUN /lerobot/.venv/bin/pip install -q sentencepiece
+RUN /lerobot/.venv/bin/python -m pip install -q sentencepiece
 
 USER user_lerobot
