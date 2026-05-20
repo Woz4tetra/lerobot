@@ -10,8 +10,10 @@ RUN uv pip install -q sentencepiece
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
-RUN groupmod -g "${GROUP_ID}" user_lerobot && \
-    usermod -u "${USER_ID}" -g "${GROUP_ID}" user_lerobot && \
-    chown -R user_lerobot:user_lerobot /lerobot /home/user_lerobot
+RUN if [ "$(id -u user_lerobot)" != "${USER_ID}" ] || [ "$(id -g user_lerobot)" != "${GROUP_ID}" ]; then \
+      groupmod -o -g "${GROUP_ID}" user_lerobot && \
+      usermod -o -u "${USER_ID}" -g "${GROUP_ID}" user_lerobot && \
+      chown -R user_lerobot:user_lerobot /lerobot /home/user_lerobot; \
+    fi
 
 USER user_lerobot
