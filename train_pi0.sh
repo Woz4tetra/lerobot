@@ -24,13 +24,15 @@ export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 # ── Train ─────────────────────────────────────────────────────────────────────
 
 docker run --rm --gpus all --shm-size 16gb --user "$(id -u):$(id -g)" \
-  -v "${HF_CACHE}:/home/user_lerobot/.cache/huggingface" \
+  -v "${HF_CACHE}:/hf_cache" \
   -v "${PWD}/outputs:/lerobot/outputs" \
   -e WANDB_API_KEY="${WANDB_API_KEY}" \
+  -e HF_HOME=/hf_cache \
+  -e HF_LEROBOT_HOME=/hf_cache/lerobot \
   huggingface/lerobot-gpu:latest \
   lerobot-train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
-    --dataset.root="/home/user_lerobot/.cache/huggingface/lerobot/${DATASET_REPO_ID}" \
+    --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
     --policy.type=pi0_fast \
     --policy.pretrained_path=lerobot/pi0_fast_base \
     --policy.device=cuda \
