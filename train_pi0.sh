@@ -19,7 +19,7 @@ PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"
 
 HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
-export WANDB_API_KEY="$(cat ~/wandb_key)"
+export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,7 @@ docker run --rm --gpus all --shm-size 16gb \
   -v "${HF_CACHE}:/home/user_lerobot/.cache/huggingface" \
   -v "${PWD}/outputs:/lerobot/outputs" \
   -e WANDB_API_KEY="${WANDB_API_KEY}" \
+  -e HF_DATASETS_CACHE=/tmp/hf_datasets \
   huggingface/lerobot-gpu:latest \
   lerobot-train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
