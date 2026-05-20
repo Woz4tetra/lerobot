@@ -17,6 +17,7 @@ OUTPUT_NAME="act_my_task"                 # name for the output dir and HF polic
 STEPS=80000                               # resumed from checkpoint
 BATCH_SIZE=8                              # 8 is safe for RTX 4080 12GB with ACT
 PUSH_TO_HUB=false                         # set true to upload trained policy to HuggingFace
+WANDB_PROJECT="lerobot"
 
 # ── Train ─────────────────────────────────────────────────────────────────────
 
@@ -33,4 +34,6 @@ uv run lerobot-train \
   --steps="${STEPS}" \
   --save_freq=5000 \
   --policy.push_to_hub="${PUSH_TO_HUB}" \
-  --policy.repo_id="local/${OUTPUT_NAME}"
+  --policy.repo_id="local/${OUTPUT_NAME}" \
+  --wandb.enable=true \
+  --wandb.project="${WANDB_PROJECT}"

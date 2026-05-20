@@ -20,6 +20,7 @@ import logging
 import math
 import os
 import platform
+import subprocess
 import time
 from pathlib import Path
 from threading import Event, Lock, Thread
@@ -221,6 +222,31 @@ class OpenCVCamera(Camera):
             self.fps = self.videocapture.get(cv2.CAP_PROP_FPS)
         else:
             self._validate_fps()
+
+        if self.config.v4l2_controls:
+            self._apply_v4l2_controls()
+
+    def _apply_v4l2_controls(self) -> None:
+        """Applies v4l2_controls via v4l2-ctl after the stream is open.
+
+        Called at the end of _configure_capture_settings so these settings override
+        any driver reset that occurs when OpenCV starts the stream.
+        Linux only; skipped silently on other platforms.
+        """
+        if platform.system() != "Linux":
+            logger.warning(f"{self} v4l2_controls are only supported on Linux; ignoring.")
+            return
+
+        device = str(self.index_or_path)
+        ctrl_str = ",".join(f"{k}={v}" for k, v in self.config.v4l2_controls.items())
+        cmd = ["v4l2-ctl", f"--device={device}", f"--set-ctrl={ctrl_str}"]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            logger.debug(f"{self} applied v4l2 controls: {ctrl_str}")
+        except FileNotFoundError:
+            logger.warning(f"{self} v4l2-ctl not found; skipping v4l2_controls. Install v4l-utils.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"{self} v4l2-ctl failed: {e.stderr.strip()}")
 
     def _validate_fps(self) -> None:
         """Validates and sets the camera's frames per second (FPS)."""
