@@ -3,7 +3,7 @@ FROM huggingface/lerobot-gpu:latest
 USER root
 
 # Missing dep for pi0_fast action tokenizer
-RUN uv pip install -q sentencepiece
+RUN /lerobot/.venv/bin/pip install -q sentencepiece
 
 # Remap the container user to match the host UID/GID so mounted volumes
 # are read/writable without any /tmp workarounds.
