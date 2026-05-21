@@ -322,6 +322,15 @@ def train(cfg: TrainPipelineConfig, accelerator: "Accelerator | None" = None):
         processor_kwargs["preprocessor_overrides"]["rename_observations_processor"] = {
             "rename_map": cfg.rename_map
         }
+        # transformers 5.x loads sub-attributes from a subfolder named after the
+        # attribute. `physical-intelligence/fast` only ships tokenizer files at
+        # the repo root, so its `bpe_tokenizer` sub-attribute fails to load.
+        # `lerobot/fast-action-tokenizer` is the same tokenizer with the
+        # expected `bpe_tokenizer/` subfolder layout.
+        if getattr(cfg.policy, "type", None) == "pi0_fast":
+            processor_kwargs["preprocessor_overrides"]["action_tokenizer_processor"] = {
+                "action_tokenizer_name": "lerobot/fast-action-tokenizer",
+            }
         postprocessor_kwargs["postprocessor_overrides"] = {
             "unnormalizer_processor": {
                 "stats": dataset.meta.stats,

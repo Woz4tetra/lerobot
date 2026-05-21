@@ -5,4 +5,7 @@ USER root
 # Missing dep for pi0_fast action tokenizer
 RUN VIRTUAL_ENV=/lerobot/.venv uv pip install sentencepiece
 
+# Overlay local source so patches in this fork apply to the editable install.
+COPY --chown=user_lerobot:user_lerobot src /lerobot/src
+
 USER user_lerobot
