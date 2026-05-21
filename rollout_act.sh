@@ -8,7 +8,7 @@ set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-POLICY_PATH="outputs/train/act_my_task/checkpoints/030000/pretrained_model"
+POLICY_PATH="outputs/train/act_my_task/checkpoints/080000/pretrained_model"
 TASK_DESCRIPTION="pick up the object and place it in the box"
 EPISODE_TIME_S=60
 
