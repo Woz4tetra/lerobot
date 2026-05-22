@@ -13,7 +13,7 @@ set -euo pipefail
 
 DATASET_REPO_ID="local/my_task_20260519_221316"  # stamped repo id from record session
 OUTPUT_NAME="pi0_fast_my_task"
-STEPS=10000                               # start here and check loss; may need 50k-100k
+STEPS=50000                               # start here and check loss; may need 50k-100k
 BATCH_SIZE=4
 PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"

@@ -177,6 +177,10 @@ class OpenCVCamera(Camera):
                 if self.latest_frame is None:
                     raise ConnectionError(f"{self} failed to capture frames during warmup.")
 
+        # Some drivers reset controls when streaming starts, so re-apply after warmup.
+        if self.config.v4l2_controls:
+            self._apply_v4l2_controls()
+
         logger.info(f"{self} connected.")
 
     @check_if_not_connected
