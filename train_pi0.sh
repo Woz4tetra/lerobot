@@ -25,6 +25,32 @@ export GROUP_ID="$(id -g)"
 export HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
 export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 
+# ── Detect resume vs fresh start ──────────────────────────────────────────────
+
+OUTPUT_DIR="outputs/train/${OUTPUT_NAME}"
+LAST_LINK="${OUTPUT_DIR}/checkpoints/last"
+
+if [ -L "${LAST_LINK}" ]; then
+  # Resolve the 'last' symlink to get the step directory, then point at the
+  # train_config.json inside pretrained_model/ (where lerobot saves it).
+  LAST_STEP_DIR="$(readlink -f "${LAST_LINK}")"
+  TRAIN_CONFIG="${LAST_STEP_DIR}/pretrained_model/train_config.json"
+  echo "Resuming from checkpoint: ${LAST_STEP_DIR}"
+  RESUME_ARGS="--resume=true --config_path=${TRAIN_CONFIG}"
+  PRETRAINED_ARGS=""
+elif [ -d "${OUTPUT_DIR}" ]; then
+  # Output dir exists but no checkpoint saved yet (crashed before first save).
+  # Safe to wipe since there's nothing to resume from.
+  echo "No checkpoint found — removing stale output dir and starting fresh."
+  rm -rf "${OUTPUT_DIR}"
+  RESUME_ARGS=""
+  PRETRAINED_ARGS="--policy.pretrained_path=lerobot/pi0fast-base"
+else
+  echo "Starting fresh run (output dir: ${OUTPUT_DIR})"
+  RESUME_ARGS=""
+  PRETRAINED_ARGS="--policy.pretrained_path=lerobot/pi0fast-base"
+fi
+
 # ── Train ─────────────────────────────────────────────────────────────────────
 
 docker compose build train
@@ -33,14 +59,14 @@ docker compose run --rm train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
     --policy.type=pi0_fast \
-    --policy.pretrained_path=lerobot/pi0fast-base \
+    ${PRETRAINED_ARGS} \
     --policy.device=cuda \
     --policy.dtype=bfloat16 \
     --policy.gradient_checkpointing=true \
     --policy.chunk_size=10 \
     --policy.n_action_steps=10 \
     --policy.max_action_tokens=256 \
-    --output_dir="outputs/train/${OUTPUT_NAME}" \
+    --output_dir="${OUTPUT_DIR}" \
     --job_name="${OUTPUT_NAME}" \
     --batch_size="${BATCH_SIZE}" \
     --steps="${STEPS}" \
@@ -48,4 +74,6 @@ docker compose run --rm train \
     --policy.push_to_hub="${PUSH_TO_HUB}" \
     --policy.repo_id="local/${OUTPUT_NAME}" \
     --wandb.enable=true \
-    --wandb.project="${WANDB_PROJECT}"
+    --wandb.disable_artifact=true \
+    --wandb.project="${WANDB_PROJECT}" \
+    ${RESUME_ARGS}
