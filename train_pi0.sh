@@ -28,18 +28,25 @@ export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
 # ── Detect resume vs fresh start ──────────────────────────────────────────────
 
 OUTPUT_DIR="outputs/train/${OUTPUT_NAME}"
-LAST_CHECKPOINT="$(ls -d "${OUTPUT_DIR}/checkpoints/"*/pretrained_model 2>/dev/null | sort -V | tail -1)"
+LAST_LINK="${OUTPUT_DIR}/checkpoints/last"
 
-if [ -n "${LAST_CHECKPOINT}" ]; then
-  TRAIN_CONFIG="${LAST_CHECKPOINT}/../train_config.json"
-  echo "Resuming from checkpoint: ${LAST_CHECKPOINT}"
+if [ -L "${LAST_LINK}" ]; then
+  # Resolve the 'last' symlink to get the step directory, then point at the
+  # train_config.json inside pretrained_model/ (where lerobot saves it).
+  LAST_STEP_DIR="$(readlink -f "${LAST_LINK}")"
+  TRAIN_CONFIG="${LAST_STEP_DIR}/pretrained_model/train_config.json"
+  echo "Resuming from checkpoint: ${LAST_STEP_DIR}"
   RESUME_ARGS="--resume=true --config_path=${TRAIN_CONFIG}"
   PRETRAINED_ARGS=""
+elif [ -d "${OUTPUT_DIR}" ]; then
+  # Output dir exists but no checkpoint saved yet (crashed before first save).
+  # Safe to wipe since there's nothing to resume from.
+  echo "No checkpoint found — removing stale output dir and starting fresh."
+  rm -rf "${OUTPUT_DIR}"
+  RESUME_ARGS=""
+  PRETRAINED_ARGS="--policy.pretrained_path=lerobot/pi0fast-base"
 else
   echo "Starting fresh run (output dir: ${OUTPUT_DIR})"
-  # Remove stale output dir left by a pre-checkpoint crash so lerobot doesn't
-  # raise FileExistsError.
-  rm -rf "${OUTPUT_DIR}"
   RESUME_ARGS=""
   PRETRAINED_ARGS="--policy.pretrained_path=lerobot/pi0fast-base"
 fi
