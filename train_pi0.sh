@@ -31,11 +31,11 @@ OUTPUT_DIR="outputs/train/${OUTPUT_NAME}"
 LAST_LINK="${OUTPUT_DIR}/checkpoints/last"
 
 if [ -L "${LAST_LINK}" ]; then
-  # Resolve the 'last' symlink to get the step directory, then point at the
-  # train_config.json inside pretrained_model/ (where lerobot saves it).
-  LAST_STEP_DIR="$(readlink -f "${LAST_LINK}")"
-  TRAIN_CONFIG="${LAST_STEP_DIR}/pretrained_model/train_config.json"
-  echo "Resuming from checkpoint: ${LAST_STEP_DIR}"
+  # Read the symlink target (just the step name, e.g. "010000") and build a
+  # relative path so it resolves correctly inside the container's working dir.
+  LAST_STEP="$(readlink "${LAST_LINK}")"
+  TRAIN_CONFIG="${OUTPUT_DIR}/checkpoints/${LAST_STEP}/pretrained_model/train_config.json"
+  echo "Resuming from checkpoint: ${LAST_STEP}"
   RESUME_ARGS="--resume=true --config_path=${TRAIN_CONFIG}"
   PRETRAINED_ARGS=""
 elif [ -d "${OUTPUT_DIR}" ]; then
