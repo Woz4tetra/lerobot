@@ -11,10 +11,9 @@ set -euo pipefail
 CLUSTER="ben@megamind"
 LOCAL_PORT=8080
 
-# Path to the checkpoint as seen by the Docker container on the cluster.
-# The container mounts ./outputs at /lerobot/outputs, working dir is /lerobot.
+# Absolute path inside the cluster container (/lerobot/outputs is the mounted volume).
 CHECKPOINT_STEP="010000"
-SERVER_CHECKPOINT="outputs/train/pi0_fast_my_task/checkpoints/${CHECKPOINT_STEP}/pretrained_model"
+SERVER_CHECKPOINT="/lerobot/outputs/train/pi0_fast_my_task/checkpoints/${CHECKPOINT_STEP}/pretrained_model"
 
 TASK_DESCRIPTION="pick up the object and place it in the box"
 EPISODE_TIME_S=60

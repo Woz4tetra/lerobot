@@ -26,6 +26,7 @@ echo "Starting policy server on port ${PORT}..."
 docker compose run --rm \
   -p "${PORT}:${PORT}" \
   -e NVIDIA_VISIBLE_DEVICES \
+  -w /lerobot/outputs \
   train \
   python -m lerobot.async_inference.policy_server \
     --host=0.0.0.0 \
