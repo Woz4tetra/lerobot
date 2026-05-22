@@ -177,9 +177,26 @@ class OpenCVCamera(Camera):
                 if self.latest_frame is None:
                     raise ConnectionError(f"{self} failed to capture frames during warmup.")
 
-        # Some drivers reset controls when streaming starts, so re-apply after warmup.
+        # Apply v4l2 controls AFTER warmup so the camera spends the warmup window in
+        # its default (auto) mode. Cold-booted cameras (e.g. just plugged in) come up
+        # with gain at a low default; auto-exposure during warmup pushes gain to a
+        # sensible value for the scene, and switching to manual exposure here locks
+        # that good gain in. Applying before warmup would freeze gain at the
+        # cold-boot default, producing a dark image until the camera is reconnected.
         if self.config.v4l2_controls:
             self._apply_v4l2_controls()
+            if warmup and self.warmup_s > 0:
+                # Wait for the camera to commit the new values into its capture
+                # pipeline, then discard in-flight frames captured before the apply
+                # so the next caller sees a properly-exposed frame.
+                time.sleep(0.5)
+                for _ in range(5):
+                    self.new_frame_event.clear()
+                    try:
+                        self.async_read(timeout_ms=1000)
+                    except TimeoutError:
+                        logger.warning(f"{self} no fresh frame after v4l2 control apply")
+                        break
 
         logger.info(f"{self} connected.")
 
@@ -227,30 +244,63 @@ class OpenCVCamera(Camera):
         else:
             self._validate_fps()
 
-        if self.config.v4l2_controls:
-            self._apply_v4l2_controls()
-
     def _apply_v4l2_controls(self) -> None:
-        """Applies v4l2_controls via v4l2-ctl after the stream is open.
+        """Applies v4l2_controls via v4l2-ctl, verifying each one took effect.
 
-        Called at the end of _configure_capture_settings so these settings override
-        any driver reset that occurs when OpenCV starts the stream.
-        Linux only; skipped silently on other platforms.
+        Controls are applied one at a time in insertion order (so e.g. ``auto_exposure``
+        switches to manual mode before ``exposure_time_absolute`` is set). After each
+        set, the value is read back and retried up to a few times if the driver
+        silently rejected or reset it. Linux only; skipped silently on other platforms.
         """
         if platform.system() != "Linux":
             logger.warning(f"{self} v4l2_controls are only supported on Linux; ignoring.")
             return
 
         device = str(self.index_or_path)
-        ctrl_str = ",".join(f"{k}={v}" for k, v in self.config.v4l2_controls.items())
-        cmd = ["v4l2-ctl", f"--device={device}", f"--set-ctrl={ctrl_str}"]
+        max_retries = 3
+        for ctrl_name, expected in self.config.v4l2_controls.items():
+            actual: int | None = None
+            for attempt in range(max_retries):
+                try:
+                    subprocess.run(
+                        ["v4l2-ctl", f"--device={device}", f"--set-ctrl={ctrl_name}={expected}"],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                except FileNotFoundError:
+                    logger.warning(f"{self} v4l2-ctl not found; skipping v4l2_controls. Install v4l-utils.")
+                    return
+                except subprocess.CalledProcessError as e:
+                    logger.warning(f"{self} v4l2-ctl set {ctrl_name}={expected} failed: {e.stderr.strip()}")
+                    break
+
+                actual = self._read_v4l2_control(device, ctrl_name)
+                if actual == expected:
+                    logger.debug(f"{self} v4l2 control {ctrl_name}={expected} verified")
+                    break
+                time.sleep(0.05)
+            else:
+                logger.warning(
+                    f"{self} v4l2 control {ctrl_name} did not stick after {max_retries} attempts "
+                    f"(expected={expected}, actual={actual}). Image may have wrong exposure/settings."
+                )
+
+    def _read_v4l2_control(self, device: str, ctrl_name: str) -> int | None:
+        """Reads a v4l2 control value via v4l2-ctl. Returns None on parse failure."""
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            logger.debug(f"{self} applied v4l2 controls: {ctrl_str}")
-        except FileNotFoundError:
-            logger.warning(f"{self} v4l2-ctl not found; skipping v4l2_controls. Install v4l-utils.")
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"{self} v4l2-ctl failed: {e.stderr.strip()}")
+            result = subprocess.run(
+                ["v4l2-ctl", f"--device={device}", f"--get-ctrl={ctrl_name}"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            # Output: "ctrl_name: value" for integer controls, or
+            # "ctrl_name: value (Label)" for menu controls (e.g. auto_exposure).
+            value_part = result.stdout.strip().split(":", 1)[-1].strip()
+            return int(value_part.split()[0])
+        except (subprocess.CalledProcessError, ValueError, IndexError):
+            return None
 
     def _validate_fps(self) -> None:
         """Validates and sets the camera's frames per second (FPS)."""
