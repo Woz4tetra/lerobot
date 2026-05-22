@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Run the pi0_fast policy inference server on the cluster GPU.
+# Run the policy inference server on the cluster GPU.
 # The robot_client on the laptop connects via SSH tunnel.
+# Policy type and checkpoint are set by the client (rollout script).
 #
 # Run on megamind:  ./policy_server.sh
-# Run on laptop:    ./rollout_pi0_fast_remote.sh
+# Run on laptop:    ./rollout_pi05_remote.sh
 
 set -euo pipefail
 
