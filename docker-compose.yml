@@ -11,6 +11,7 @@ services:
       - WANDB_API_KEY
       - HF_HOME=/hf_cache
       - HF_LEROBOT_HOME=/hf_cache/lerobot
+      - WANDB_DATA_DIR=/lerobot/outputs/.wandb_data
     volumes:
       - "${HF_CACHE}:/hf_cache"
       - "./outputs:/lerobot/outputs"
