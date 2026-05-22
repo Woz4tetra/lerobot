@@ -1,24 +1,37 @@
 #!/usr/bin/env bash
-# Run the trained Pi0-Fast policy on the robot.
-# Controls: ESC to stop
+# Run pi0_fast rollout with inference on the cluster, robot control on this machine.
+# Requires policy_server.sh to be running on megamind first.
 #
-# Usage: ./rollout_pi0_fast.sh
+# Usage: ./rollout_pi0_fast_remote.sh
 
 set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-POLICY_PATH="outputs/train/pi0_fast_my_task/checkpoints/010000/pretrained_model"
+CLUSTER="ben@megamind"
+LOCAL_PORT=8080
+
+# Path to the checkpoint as seen by the Docker container on the cluster.
+# The container mounts ./outputs at /lerobot/outputs, working dir is /lerobot.
+CHECKPOINT_STEP="010000"
+SERVER_CHECKPOINT="outputs/train/pi0_fast_my_task/checkpoints/${CHECKPOINT_STEP}/pretrained_model"
+
 TASK_DESCRIPTION="pick up the object and place it in the box"
 EPISODE_TIME_S=60
 
-echo "Starting rollout..."
+# ── SSH tunnel ─────────────────────────────────────────────────────────────────
+
+echo "Opening SSH tunnel to ${CLUSTER}:${LOCAL_PORT}..."
+ssh -L "${LOCAL_PORT}:localhost:${LOCAL_PORT}" -N -f "${CLUSTER}"
+TUNNEL_PID=$!
+trap "kill ${TUNNEL_PID} 2>/dev/null; exit" EXIT INT TERM
+echo "Tunnel open (PID ${TUNNEL_PID})"
 
 # ── Rollout ───────────────────────────────────────────────────────────────────
 
-uv run lerobot-rollout \
-  --strategy.type=base \
-  --policy.path="${POLICY_PATH}" \
+echo "Starting remote rollout..."
+
+uv run python -m lerobot.async_inference.robot_client \
   --robot.type=so101_follower \
   --robot.port=/dev/ttyACM0 \
   --robot.id=bw_follower \
@@ -39,5 +52,10 @@ uv run lerobot-rollout \
     } \
   }" \
   --task="${TASK_DESCRIPTION}" \
-  --duration="${EPISODE_TIME_S}" \
-  --display_data=true
+  --server_address="localhost:${LOCAL_PORT}" \
+  --policy_type=pi0_fast \
+  --pretrained_name_or_path="${SERVER_CHECKPOINT}" \
+  --policy_device=cuda \
+  --client_device=cpu \
+  --actions_per_chunk=10 \
+  --fps=30
