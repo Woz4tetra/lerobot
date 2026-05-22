@@ -21,9 +21,10 @@ EPISODE_TIME_S=60
 # ── SSH tunnel ─────────────────────────────────────────────────────────────────
 
 echo "Opening SSH tunnel to ${CLUSTER}:${LOCAL_PORT}..."
-ssh -L "${LOCAL_PORT}:localhost:${LOCAL_PORT}" -N -f "${CLUSTER}"
+ssh -L "${LOCAL_PORT}:localhost:${LOCAL_PORT}" -N "${CLUSTER}" &
 TUNNEL_PID=$!
 trap "kill ${TUNNEL_PID} 2>/dev/null; exit" EXIT INT TERM
+sleep 1  # give ssh a moment to establish the tunnel
 echo "Tunnel open (PID ${TUNNEL_PID})"
 
 # ── Rollout ───────────────────────────────────────────────────────────────────
