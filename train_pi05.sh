@@ -19,7 +19,8 @@ set -euo pipefail
 DATASET_REPO_ID="local/my_task_20260519_221316"  # stamped repo id from record session
 OUTPUT_NAME="pi05_my_task"
 STEPS=50000                               # start here and check loss; may need 50k-100k
-BATCH_SIZE=4
+NUM_GPUS=3
+BATCH_SIZE=4                              # per GPU; effective batch = BATCH_SIZE * NUM_GPUS
 PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"
 
@@ -56,7 +57,8 @@ fi
 
 docker compose build train
 docker compose run --rm train \
-  lerobot-train \
+  accelerate launch --num_processes="${NUM_GPUS}" --mixed_precision=bf16 \
+  -m lerobot.scripts.lerobot_train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
     --policy.type=pi05 \
