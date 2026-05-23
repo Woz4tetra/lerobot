@@ -57,5 +57,7 @@ uv run python -m lerobot.async_inference.robot_client \
   --pretrained_name_or_path="${SERVER_CHECKPOINT}" \
   --policy_device=cuda \
   --client_device=cpu \
-  --actions_per_chunk=10 \
+  --actions_per_chunk=50 \
+  --chunk_size_threshold=0.3 \
   --fps=30
+
