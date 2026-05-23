@@ -57,8 +57,8 @@ fi
 # ── Train ─────────────────────────────────────────────────────────────────────
 
 docker compose build train
-docker compose run --rm train \
-  accelerate launch --num_processes="${NUM_GPUS}" --mixed_precision=bf16 \
+docker compose run --rm -e NVIDIA_VISIBLE_DEVICES=all train \
+  accelerate launch --multi_gpu --num_processes="${NUM_GPUS}" --mixed_precision=bf16 \
   -m lerobot.scripts.lerobot_train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
