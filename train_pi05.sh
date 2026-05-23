@@ -18,7 +18,6 @@ set -euo pipefail
 
 DATASET_REPO_ID="local/my_task_20260519_221316"  # stamped repo id from record session
 OUTPUT_NAME="pi05_my_task"
-NUM_GPUS=3
 BATCH_SIZE=8                              # per GPU; effective batch = BATCH_SIZE * NUM_GPUS
 STEPS=100000                               # start here and check loss; may need 50k-100k
 PUSH_TO_HUB=false
@@ -30,7 +29,6 @@ export USER_ID="$(id -u)"
 export GROUP_ID="$(id -g)"
 export HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
 export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
-export NVIDIA_VISIBLE_DEVICES=all  # override any single-GPU selection left by policy_server.sh
 
 # ── Detect resume vs fresh start ──────────────────────────────────────────────
 
@@ -57,9 +55,8 @@ fi
 # ── Train ─────────────────────────────────────────────────────────────────────
 
 docker compose build train
-docker compose run --rm -e NVIDIA_VISIBLE_DEVICES=all train \
-  accelerate launch --multi_gpu --num_processes="${NUM_GPUS}" --mixed_precision=bf16 \
-  -m lerobot.scripts.lerobot_train \
+docker compose run --rm train \
+  lerobot-train \
     --dataset.repo_id="${DATASET_REPO_ID}" \
     --dataset.root="/hf_cache/lerobot/${DATASET_REPO_ID}" \
     --policy.type=pi05 \
