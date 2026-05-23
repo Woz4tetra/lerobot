@@ -33,4 +33,4 @@ docker compose run --rm \
     --host=0.0.0.0 \
     --port="${PORT}" \
     --fps="${FPS}" \
-    --inference_latency=5.0
+    --inference_latency=0.0
