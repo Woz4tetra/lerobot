@@ -30,6 +30,7 @@ export USER_ID="$(id -u)"
 export GROUP_ID="$(id -g)"
 export HF_CACHE="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface}"
 export WANDB_API_KEY="$(tr -d '[:space:]' < ~/wandb_key)"
+export NVIDIA_VISIBLE_DEVICES=all  # override any single-GPU selection left by policy_server.sh
 
 # ── Detect resume vs fresh start ──────────────────────────────────────────────
 
