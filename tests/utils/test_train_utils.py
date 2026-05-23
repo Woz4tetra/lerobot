@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from lerobot.common.train_utils import (
+    cleanup_old_checkpoints,
     get_step_checkpoint_dir,
     get_step_identifier,
     load_training_state,
@@ -70,6 +71,26 @@ def test_update_last_checkpoint(tmp_path):
     last_checkpoint = tmp_path / LAST_CHECKPOINT_LINK
     assert last_checkpoint.is_symlink()
     assert last_checkpoint.resolve() == checkpoint
+
+
+def test_cleanup_old_checkpoints(tmp_path):
+    keep = tmp_path / "002000"
+    older = tmp_path / "001000"
+    oldest = tmp_path / "000500"
+    for d in (keep, older, oldest):
+        d.mkdir()
+        (d / "weights.bin").write_text("x")
+    other = tmp_path / "notes"
+    other.mkdir()
+    update_last_checkpoint(keep)
+
+    cleanup_old_checkpoints(keep)
+
+    assert keep.is_dir()
+    assert not older.exists()
+    assert not oldest.exists()
+    assert other.is_dir()
+    assert (tmp_path / LAST_CHECKPOINT_LINK).is_symlink()
 
 
 @patch("lerobot.common.train_utils.save_training_state")

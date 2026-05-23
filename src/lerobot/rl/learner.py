@@ -61,6 +61,7 @@ from torch.optim.optimizer import Optimizer
 
 from lerobot.cameras import opencv  # noqa: F401
 from lerobot.common.train_utils import (
+    cleanup_old_checkpoints,
     get_step_checkpoint_dir,
     load_training_state as utils_load_training_state,
     save_checkpoint,
@@ -733,6 +734,7 @@ def save_training_checkpoint(
 
     # Update the "last" symlink
     update_last_checkpoint(checkpoint_dir)
+    cleanup_old_checkpoints(checkpoint_dir)
 
     # TODO : temporary save replay buffer here, remove later when on the robot
     # We want to control this with the keyboard inputs

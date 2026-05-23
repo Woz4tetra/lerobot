@@ -34,6 +34,7 @@ from torch.optim import Optimizer
 from tqdm import tqdm
 
 from lerobot.common.train_utils import (
+    cleanup_old_checkpoints,
     get_step_checkpoint_dir,
     get_step_identifier,
     load_training_state,
@@ -523,6 +524,7 @@ def train(cfg: TrainPipelineConfig, accelerator: "Accelerator | None" = None):
                 update_last_checkpoint(checkpoint_dir)
                 if wandb_logger:
                     wandb_logger.log_policy(checkpoint_dir)
+                cleanup_old_checkpoints(checkpoint_dir)
 
             accelerator.wait_for_everyone()
 

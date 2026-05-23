@@ -15,4 +15,7 @@ services:
     volumes:
       - "${HF_CACHE}:/hf_cache"
       - "./outputs:/lerobot/outputs"
+      # Checkpoints live on the large /media/storage drive; mount at the matching
+      # host path so symlinks under outputs/train/*/checkpoints resolve inside the container.
+      - "/media/storage/lerobot_checkpoints:/media/storage/lerobot_checkpoints"
     working_dir: /lerobot

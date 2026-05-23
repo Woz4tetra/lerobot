@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import shutil
 from pathlib import Path
 
 from torch.optim import Optimizer
@@ -64,6 +65,23 @@ def update_last_checkpoint(checkpoint_dir: Path) -> Path:
         last_checkpoint_dir.unlink()
     relative_target = checkpoint_dir.relative_to(checkpoint_dir.parent)
     last_checkpoint_dir.symlink_to(relative_target)
+
+
+def cleanup_old_checkpoints(checkpoint_dir: Path) -> None:
+    """Delete every sibling step checkpoint directory except the one passed in.
+
+    Step directories are identified by numeric names (e.g. "002000"). Symlinks
+    such as the `last` pointer and any non-numeric directories are left alone.
+    """
+    if not checkpoint_dir.is_dir():
+        return
+    keep_name = checkpoint_dir.name
+    for entry in checkpoint_dir.parent.iterdir():
+        if entry.is_symlink() or not entry.is_dir() or entry.name == keep_name:
+            continue
+        if not entry.name.isdigit():
+            continue
+        shutil.rmtree(entry)
 
 
 def save_checkpoint(
