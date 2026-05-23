@@ -20,7 +20,7 @@ DATASET_REPO_ID="local/my_task_20260519_221316"  # stamped repo id from record s
 OUTPUT_NAME="pi05_my_task"
 STEPS=50000                               # start here and check loss; may need 50k-100k
 NUM_GPUS=3
-BATCH_SIZE=4                              # per GPU; effective batch = BATCH_SIZE * NUM_GPUS
+BATCH_SIZE=8                              # per GPU; effective batch = BATCH_SIZE * NUM_GPUS
 PUSH_TO_HUB=false
 WANDB_PROJECT="lerobot"
 
