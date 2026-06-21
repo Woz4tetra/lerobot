@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-DATASET_REPO_ID="local/my_task_20260519_221316"
+DATASET_REPO_ID="local/my_task_20260620_223300"
 LOCAL_ROOT="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface/lerobot}"
 REMOTE="ben@megamind"
 REMOTE_ROOT="/home/ben/.cache/huggingface/lerobot"

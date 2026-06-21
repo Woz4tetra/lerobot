@@ -12,6 +12,13 @@ services:
       - HF_HOME=/hf_cache
       - HF_LEROBOT_HOME=/hf_cache/lerobot
       - WANDB_DATA_DIR=/lerobot/outputs/.wandb_data
+      # The container runs as the host UID, not the image's user_lerobot, so the
+      # baked-in /home/user_lerobot is not writable. Point HOME at a writable dir
+      # so wandb/HF/cache writes don't fail.
+      - HOME=/lerobot/outputs/.home
+      # The xet transfer backend hangs (connects, then stops transferring and
+      # spins a CPU core) when pulling smolvla_base. Fall back to plain HTTPS.
+      - HF_HUB_DISABLE_XET=1
     volumes:
       - "${HF_CACHE}:/hf_cache"
       - "./outputs:/lerobot/outputs"
