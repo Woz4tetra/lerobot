@@ -6,6 +6,9 @@
 
 set -euo pipefail
 
+# Shared camera configuration (edit camera settings in cameras.sh).
+source "$(dirname "$0")/cameras.sh"
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 CLUSTER="ben@megamind"
@@ -35,22 +38,7 @@ uv run python -m lerobot.async_inference.robot_client \
   --robot.type=so101_follower \
   --robot.port=/dev/ttyACM0 \
   --robot.id=bw_follower \
-  --robot.cameras="{ \
-    gripper: { \
-      type: opencv, index_or_path: /dev/video4, width: 640, height: 480, fps: 31, backend: V4L2, \
-      v4l2_controls: { \
-        auto_exposure: 1, exposure_time_absolute: 157, exposure_dynamic_framerate: 0, \
-        white_balance_automatic: 0, white_balance_temperature: 3830, hue: 15 \
-      } \
-    }, \
-    overhead: { \
-      type: opencv, index_or_path: /dev/video2, width: 640, height: 480, fps: 30, fourcc: MJPG, backend: V4L2, \
-      v4l2_controls: { \
-        auto_exposure: 1, exposure_time_absolute: 333, exposure_dynamic_framerate: 0, \
-        white_balance_automatic: 0, white_balance_temperature: 3669, focus_automatic_continuous: 0 \
-      } \
-    } \
-  }" \
+  --robot.cameras="${ROBOT_CAMERAS}" \
   --task="${TASK_DESCRIPTION}" \
   --server_address="localhost:${LOCAL_PORT}" \
   --policy_type=pi0_fast \

@@ -6,16 +6,31 @@
 
 set -euo pipefail
 
+# Shared camera configuration (edit camera settings in cameras.sh).
+source "$(dirname "$0")/cameras.sh"
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Set these before recording.
 
 # DATASET_REPO_ID="local/my_task"
-DATASET_REPO_ID="local/my_task_20260519_221316"  # stamped repo id from previous session
-TASK_DESCRIPTION="pick up the object and place it in the box"
+DATASET_REPO_ID="local/my_task_20260620_223300"  # stamped repo id from previous session
+TASK_DESCRIPTION="pick up the cube and stack tower"
 NUM_EPISODES=50
 EPISODE_TIME_S=30
-RESET_TIME_S=10
+RESET_TIME_S=3
 PUSH_TO_HUB=false                          # set true to upload to HuggingFace after recording
+
+# Resume only if this dataset already exists locally; otherwise start a new one.
+# A dataset is "existing" once meta/info.json has been written. Hardcoding
+# --resume=true makes lerobot-record fall back to the Hub and 404 on a new repo.
+DATASET_ROOT="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface/lerobot}/${DATASET_REPO_ID}"
+if [[ -f "${DATASET_ROOT}/meta/info.json" ]]; then
+  RESUME=true
+  echo "Resuming existing dataset at ${DATASET_ROOT}"
+else
+  RESUME=false
+  echo "Creating new dataset at ${DATASET_ROOT}"
+fi
 
 echo "Starting recording..."
 
@@ -27,28 +42,13 @@ uv run lerobot-record \
   --robot.type=so101_follower \
   --robot.port=/dev/ttyACM0 \
   --robot.id=bw_follower \
-  --robot.cameras="{ \
-    gripper: { \
-      type: opencv, index_or_path: /dev/video4, width: 640, height: 480, fps: 31, backend: V4L2, \
-      v4l2_controls: { \
-        auto_exposure: 1, exposure_time_absolute: 157, exposure_dynamic_framerate: 0, \
-        white_balance_automatic: 0, white_balance_temperature: 3830, hue: 15 \
-      } \
-    }, \
-    overhead: { \
-      type: opencv, index_or_path: /dev/video2, width: 640, height: 480, fps: 30, fourcc: MJPG, backend: V4L2, \
-      v4l2_controls: { \
-        auto_exposure: 1, exposure_time_absolute: 333, exposure_dynamic_framerate: 0, \
-        white_balance_automatic: 0, white_balance_temperature: 3669, focus_automatic_continuous: 0 \
-      } \
-    } \
-  }" \
+  --robot.cameras="${ROBOT_CAMERAS}" \
   --teleop.type=so101_leader \
   --teleop.port=/dev/ttyACM1 \
   --teleop.id=bw_leader \
-  --resume=true \
+  --resume="${RESUME}" \
   --dataset.repo_id="${DATASET_REPO_ID}" \
-  --dataset.root="${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface/lerobot}/${DATASET_REPO_ID}" \
+  --dataset.root="${DATASET_ROOT}" \
   --dataset.single_task="${TASK_DESCRIPTION}" \
   --dataset.num_episodes="${NUM_EPISODES}" \
   --dataset.episode_time_s="${EPISODE_TIME_S}" \
