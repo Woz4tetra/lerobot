@@ -192,13 +192,58 @@ def rollout(cfg: RolloutConfig):
     try:
         strategy.setup(ctx)
         logger.info("Rollout setup complete, starting rollout...")
-        strategy.run(ctx)
+        run_count = 0
+        while True:
+            run_count += 1
+            strategy.run(ctx)
+
+            # Stop on Ctrl-C or when repeat is disabled. The robot is returned to
+            # its home position by teardown (return_to_initial_position).
+            if shutdown_event.is_set() or not cfg.repeat:
+                break
+
+            # Task ended: return the robot home before asking whether to repeat,
+            # so it always finishes in the same pose. Pause the engine first so it
+            # stops producing actions during the homing motion.
+            ctx.policy.inference.pause()
+            strategy.return_home(ctx)
+
+            if not _prompt_repeat(ctx):
+                break
+
+            # Reuse the connected robot and loaded policy (no reload); just clear
+            # per-episode policy state (action queue / hidden state) for a clean run.
+            ctx.policy.inference.reset()
+            logger.info("Repeating rollout (run #%d)...", run_count + 1)
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
     finally:
         strategy.teardown(ctx)
 
     logger.info("Rollout finished")
+
+
+def _prompt_repeat(ctx) -> bool:
+    """Ask whether to run the rollout again, optionally with a new task.
+
+    Returns True to repeat, False to finish. Pressing Enter (or y/yes) repeats
+    with the same task; typing any other text sets it as the new task and
+    repeats; 'n'/'no'/'q'/'quit' finishes. Reuses the loaded policy and robot.
+    """
+    try:
+        answer = input("\nRepeat rollout? [Y/n] (or type a new task description): ").strip()
+    except EOFError:
+        # Non-interactive stdin (e.g. piped): don't loop forever.
+        return False
+
+    if answer.lower() in ("n", "no", "q", "quit"):
+        return False
+
+    if answer and answer.lower() not in ("y", "yes"):
+        ctx.policy.inference.task = answer
+        logger.info("Task updated to: %s", answer)
+
+    return True
 
 
 def main():

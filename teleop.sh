@@ -15,10 +15,10 @@ echo "Starting teleoperation..."
 
 uv run lerobot-teleoperate \
   --robot.type=so101_follower \
-  --robot.port=/dev/ttyACM0 \
+  --robot.port=/dev/lerobot_follower \
   --robot.id=bw_follower \
   --robot.cameras="${ROBOT_CAMERAS}" \
   --teleop.type=so101_leader \
-  --teleop.port=/dev/ttyACM1 \
+  --teleop.port=/dev/lerobot_leader \
   --teleop.id=bw_leader \
   --display_data=true

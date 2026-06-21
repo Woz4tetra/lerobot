@@ -137,6 +137,18 @@ class RolloutStrategy(abc.ABC):
             logger.info("Disconnecting teleoperator...")
             teleop.disconnect()
 
+    def return_home(self, ctx: RolloutContext) -> None:
+        """Smoothly return the robot to its startup (home) position.
+
+        Called at the end of every task (between repeated rollouts and before
+        shutdown) so the robot always finishes in a known pose. Safe to call
+        while the inference engine is paused.
+        """
+        hw = ctx.hardware
+        if hw.initial_position and hw.robot_wrapper.inner.is_connected:
+            logger.info("Task ended — returning robot to home position...")
+            self._return_to_initial_position(hw)
+
     @staticmethod
     def _return_to_initial_position(hw: HardwareContext, duration_s: float = 3.0, fps: int = 50) -> None:
         """Smoothly interpolate the robot back to its initial position."""

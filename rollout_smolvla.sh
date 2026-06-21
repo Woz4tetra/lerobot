@@ -14,9 +14,9 @@ set -euo pipefail
 # Shared camera configuration (edit camera settings in cameras.sh).
 source "$(dirname "$0")/cameras.sh"
 
-POLICY_PATH="outputs/train/smolvla_my_task/checkpoints/020000/pretrained_model"
-TASK_DESCRIPTION="pick up the object and place it in the box"
-EPISODE_TIME_S=60
+POLICY_PATH="outputs/train/smolvla_my_task/checkpoints/006000/pretrained_model"
+TASK_DESCRIPTION="pick up the cube and stack tower"
+EPISODE_TIME_S=30
 
 echo "Starting rollout..."
 
@@ -24,9 +24,10 @@ uv run lerobot-rollout \
   --strategy.type=base \
   --policy.path="${POLICY_PATH}" \
   --robot.type=so101_follower \
-  --robot.port=/dev/ttyACM0 \
+  --robot.port=/dev/lerobot_follower \
   --robot.id=bw_follower \
   --robot.cameras="${ROBOT_CAMERAS}" \
   --task="${TASK_DESCRIPTION}" \
   --duration="${EPISODE_TIME_S}" \
-  --display_data=true
+  --display_data=true \
+  --repeat=true

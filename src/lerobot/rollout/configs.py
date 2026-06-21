@@ -206,6 +206,11 @@ class RolloutConfig:
     # Use vocal synthesis to read events
     play_sounds: bool = True
     resume: bool = False
+    # After a rollout finishes (duration reached), prompt to run it again instead
+    # of exiting. The robot connection and loaded policy are reused, so there is
+    # no reload between runs. Press Enter to repeat, type a new task to change it,
+    # or 'n' to finish. Most useful with --strategy.type=base for quick evaluation.
+    repeat: bool = False
     # Rename map for mapping robot/dataset observation keys to policy keys
     rename_map: dict[str, str] = field(default_factory=dict)
 

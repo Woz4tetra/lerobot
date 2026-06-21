@@ -79,6 +79,16 @@ class InferenceEngine(abc.ABC):
         """Resume background inference.  Default: no-op."""
 
     @property
+    def task(self) -> str | None:
+        """The language task string conditioning the policy, if any."""
+        return getattr(self, "_task", None)
+
+    @task.setter
+    def task(self, value: str) -> None:
+        """Update the task conditioning the policy (used when repeating a rollout)."""
+        self._task = value
+
+    @property
     def ready(self) -> bool:
         """True once the backend can produce actions (e.g. warmup done)."""
         return True

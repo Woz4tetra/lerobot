@@ -23,7 +23,7 @@ uv run lerobot-rollout \
   --strategy.type=base \
   --policy.path="${POLICY_PATH}" \
   --robot.type=so101_follower \
-  --robot.port=/dev/ttyACM0 \
+  --robot.port=/dev/lerobot_follower \
   --robot.id=bw_follower \
   --robot.cameras="${ROBOT_CAMERAS}" \
   --task="${TASK_DESCRIPTION}" \

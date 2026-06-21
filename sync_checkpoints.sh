@@ -8,8 +8,8 @@
 set -euo pipefail
 
 CLUSTER="ben@megamind"
-REMOTE_BASE="~/lerobot/outputs/train/pi0_fast_my_task/checkpoints"
-LOCAL_BASE="outputs/train/pi0_fast_my_task/checkpoints"
+REMOTE_BASE="~/lerobot/outputs/train/smolvla_my_task/checkpoints"
+LOCAL_BASE="outputs/train/smolvla_my_task/checkpoints"
 
 STEP=$(ssh "${CLUSTER}" "ls ${REMOTE_BASE}/ | grep -v last | sort -V | tail -1")
 
